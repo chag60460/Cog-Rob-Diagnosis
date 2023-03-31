@@ -14,9 +14,166 @@ def test_ok():
         print("Tests passed!!")
 
 
-"""
-Model checking code
-"""
+### Helper Functions ###
+def get_all_keys(d):
+    for key, value in d.items():
+        yield key
+        if isinstance(value, dict):
+            yield from get_all_keys(value)
+
+def is_conflict(sat, candidate):
+    return not sat.check_consistency(candidate)[0]
+### End Helper Functions ###
+
+#Check for Problem #1
+
+def check_validity(fn):
+    solution_list=[False, False, True, True, False, True, True, True, True, False, False, True, 
+                   True, True, True, True, True, True, True, True, True, True, True, True, True, True]
+    index=0
+    p = Problem()
+    T1 = p.add_variable('thruster', type='finite_domain', domain=['thrust', 'nothrust'])
+    R1 = p.add_variable('runthruster', type='finite_domain', domain=['on', 'off'])
+    P3 = p.add_variable('pressure', type='finite_domain', domain=['high', 'low'])
+    p.add_constraint('runthruster=on & pressure=high => thruster=thrust')
+    p.add_constraint('runthruster=on & pressure=low => thruster=nothrust')
+    p.add_constraint('runthruster=off => thruster=nothrust')
+    sat = SATSolver(p)
+
+    thruster_model = {
+        frozenset([T1.get_assignment('thrust')]) : {
+            frozenset([T1.get_assignment('thrust'), R1.get_assignment('on')]) : {
+                frozenset([T1.get_assignment('thrust'), R1.get_assignment('on'), P3.get_assignment('high')]) : {},
+                frozenset([T1.get_assignment('thrust'), R1.get_assignment('on'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([T1.get_assignment('thrust'), R1.get_assignment('off')]) : {
+                frozenset([T1.get_assignment('thrust'), R1.get_assignment('off'), P3.get_assignment('high')]) : {},
+                frozenset([T1.get_assignment('thrust'), R1.get_assignment('off'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([T1.get_assignment('thrust'), P3.get_assignment('high')]) : {},
+            frozenset([T1.get_assignment('thrust'), P3.get_assignment('low')]) : {},
+            },
+        
+        frozenset([T1.get_assignment('nothrust')]) : {
+            frozenset([T1.get_assignment('nothrust'), R1.get_assignment('on')]) : {
+                frozenset([T1.get_assignment('nothrust'), R1.get_assignment('on'), P3.get_assignment('high')]) : {},
+                frozenset([T1.get_assignment('nothrust'), R1.get_assignment('on'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([T1.get_assignment('nothrust'), R1.get_assignment('off')]) : {
+                frozenset([T1.get_assignment('nothrust'), R1.get_assignment('off'), P3.get_assignment('high')]) : {},
+                frozenset([T1.get_assignment('nothrust'), R1.get_assignment('off'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([T1.get_assignment('nothrust'), P3.get_assignment('high')]) : {},
+            frozenset([T1.get_assignment('nothrust'), P3.get_assignment('low')]) : {},
+            },
+        
+        frozenset([R1.get_assignment('on')]) : {
+                frozenset([R1.get_assignment('on'), P3.get_assignment('high')]) : {},
+                frozenset([R1.get_assignment('on'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([R1.get_assignment('off')]) : {
+                frozenset([R1.get_assignment('off'), P3.get_assignment('high')]) : {},
+                frozenset([R1.get_assignment('off'), P3.get_assignment('low')]) : {},
+                },
+        
+        frozenset([P3.get_assignment('high')]) : {},
+        
+        frozenset([P3.get_assignment('low')]) : {},
+        }
+    
+    
+    for key, value in thruster_model.items():
+        assert_equal(fn(key,sat,value), solution_list[index])
+        #print("Case: ",index, fn(key, sat, value), solution_list[index])
+        index+=1
+        if value!={}:
+            for key, value in value.items():
+                assert_equal(fn(key,sat,value), solution_list[index])
+                #print("Case: ",index, fn(key, sat, value), solution_list[index])
+                index+=1
+                if value!={}:
+                    for key, value in value.items():
+                        assert_equal(fn(key,sat,value), solution_list[index])
+                        #print("Case: ",index, fn(key, sat, value), solution_list[index])
+                        index+=1
+    return None
+
+def check_unsatisfiability(fn):
+    solution_list=[False, False, True, True, True, True, True, True, True, False, False, True, 
+            True, False, True, True, True, True, False, True, True, False, True, True, True, True]
+    index=0
+    p = Problem()
+    T1 = p.add_variable('thruster', type='finite_domain', domain=['thrust', 'nothrust'])
+    R1 = p.add_variable('runthruster', type='finite_domain', domain=['on', 'off'])
+    P3 = p.add_variable('pressure', type='finite_domain', domain=['high', 'low'])
+    p.add_constraint('runthruster=on & pressure=high => thruster=thrust')
+    p.add_constraint('runthruster=on & pressure=low => thruster=nothrust')
+    p.add_constraint('runthruster=off => thruster=nothrust')
+    sat = SATSolver(p)
+
+    thruster_model = {
+        frozenset([T1.get_assignment('thrust')]) : {
+            frozenset([T1.get_assignment('thrust'), R1.get_assignment('on')]) : {
+                frozenset([T1.get_assignment('thrust'), R1.get_assignment('on'), P3.get_assignment('high')]) : {},
+                frozenset([T1.get_assignment('thrust'), R1.get_assignment('on'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([T1.get_assignment('thrust'), R1.get_assignment('off')]) : {
+                frozenset([T1.get_assignment('thrust'), R1.get_assignment('off'), P3.get_assignment('high')]) : {},
+                frozenset([T1.get_assignment('thrust'), R1.get_assignment('off'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([T1.get_assignment('thrust'), P3.get_assignment('high')]) : {},
+            frozenset([T1.get_assignment('thrust'), P3.get_assignment('low')]) : {},
+            },
+        
+        frozenset([T1.get_assignment('nothrust')]) : {
+            frozenset([T1.get_assignment('nothrust'), R1.get_assignment('on')]) : {
+                frozenset([T1.get_assignment('nothrust'), R1.get_assignment('on'), P3.get_assignment('high')]) : {},
+                frozenset([T1.get_assignment('nothrust'), R1.get_assignment('on'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([T1.get_assignment('nothrust'), R1.get_assignment('off')]) : {
+                frozenset([T1.get_assignment('nothrust'), R1.get_assignment('off'), P3.get_assignment('high')]) : {},
+                frozenset([T1.get_assignment('nothrust'), R1.get_assignment('off'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([T1.get_assignment('nothrust'), P3.get_assignment('high')]) : {},
+            frozenset([T1.get_assignment('nothrust'), P3.get_assignment('low')]) : {},
+            },
+        
+        frozenset([R1.get_assignment('on')]) : {
+                frozenset([R1.get_assignment('on'), P3.get_assignment('high')]) : {},
+                frozenset([R1.get_assignment('on'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([R1.get_assignment('off')]) : {
+                frozenset([R1.get_assignment('off'), P3.get_assignment('high')]) : {},
+                frozenset([R1.get_assignment('off'), P3.get_assignment('low')]) : {},
+                },
+        
+        frozenset([P3.get_assignment('high')]) : {},
+        
+        frozenset([P3.get_assignment('low')]) : {},
+        }
+    
+    
+    for key, value in thruster_model.items():
+        assert_equal(fn(key,sat,value), solution_list[index])
+        #print("Case: ",index, fn(key, sat, value))
+        index+=1
+        if value!={}:
+            for key, value in value.items():
+                assert_equal(fn(key,sat,value), solution_list[index])
+                #print("Case: ",index, fn(key, sat, value))
+                index+=1
+                if value!={}:
+                    for key, value in value.items():
+                        assert_equal(fn(key,sat,value), solution_list[index])
+                        #print("Case: ",index, fn(key, sat, value))
+                        index+=1
+    return None
+
+def check_minimal_conflict_generator(prob):
+    return None
+
+
+
 def check_polycell_problem(prob):
     check_no_observations(prob)
     check_and_gate(prob, 'A1', inputs=['A', 'C'], output='X')
