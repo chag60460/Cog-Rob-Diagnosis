@@ -169,7 +169,102 @@ def check_unsatisfiability(fn):
                         index+=1
     return None
 
-def check_minimal_conflict_generator(prob):
+def check_prime_implicate_finder(fn):
+    index=0
+    p = Problem()
+    T1 = p.add_variable('thruster', type='finite_domain', domain=['thrust', 'nothrust'])
+    R1 = p.add_variable('runthruster', type='finite_domain', domain=['on', 'off'])
+    P3 = p.add_variable('pressure', type='finite_domain', domain=['high', 'low'])
+    p.add_constraint('runthruster=on & pressure=high => thruster=thrust')
+    p.add_constraint('runthruster=on & pressure=low => thruster=nothrust')
+    p.add_constraint('runthruster=off => thruster=nothrust')
+    sat = SATSolver(p)
+
+    solution_list=[([], [frozenset([T1.get_assignment('thrust')])], []), #Case 0
+                   ([], [frozenset([T1.get_assignment('thrust'), R1.get_assignment('on')])], []), #Case 1
+                   ([frozenset([T1.get_assignment('thrust'), R1.get_assignment('on'), P3.get_assignment('high')])], [], []), #Case 2
+                   ([frozenset([T1.get_assignment('thrust'), R1.get_assignment('on'), P3.get_assignment('low')])], [], []), #Case 3
+                   ([], [], [frozenset([T1.get_assignment('thrust'), R1.get_assignment('off')])]), #Case 4
+                   ([frozenset([T1.get_assignment('thrust'), R1.get_assignment('off'), P3.get_assignment('high')])], [], []), #Case 5
+                   ([frozenset([T1.get_assignment('thrust'), R1.get_assignment('off'), P3.get_assignment('low')])], [], []), #Case 6
+                   ([frozenset([T1.get_assignment('thrust'), P3.get_assignment('high')])], [], []), #Case 7
+                   ([frozenset([T1.get_assignment('thrust'), P3.get_assignment('low')])], [], []), #Case 8
+                   ([], [frozenset([T1.get_assignment('nothrust')])], []), #Case 9
+                   ([], [frozenset([T1.get_assignment('nothrust'), R1.get_assignment('on')])], []), #Case 10
+                   ([frozenset([T1.get_assignment('nothrust'), R1.get_assignment('on'), P3.get_assignment('high')])], [], []), #Case 11
+                   ([frozenset([T1.get_assignment('nothrust'), R1.get_assignment('on'), P3.get_assignment('low')])], [], []), #Case 12
+                   ([frozenset([T1.get_assignment('nothrust'), R1.get_assignment('off')])], [], []), #Case 13
+                   ([frozenset([T1.get_assignment('nothrust'), R1.get_assignment('off'), P3.get_assignment('high')])], [], []), #Case 14
+                   ([frozenset([T1.get_assignment('nothrust'), R1.get_assignment('off'), P3.get_assignment('low')])], [], []), #Case 15
+                   ([frozenset([T1.get_assignment('nothrust'), P3.get_assignment('high')])], [], []), #Case 16
+                   ([frozenset([T1.get_assignment('nothrust'), P3.get_assignment('low')])], [], []), #Case 17
+                   ([frozenset([R1.get_assignment('on')])], [], []), #Case 18
+                   ([frozenset([R1.get_assignment('on'), P3.get_assignment('high')])], [], []), #Case 19
+                   ([frozenset([R1.get_assignment('on'), P3.get_assignment('low')])], [], []), #Case 20
+                   ([frozenset([R1.get_assignment('off')])], [], []), #Case 21
+                   ([frozenset([R1.get_assignment('off'), P3.get_assignment('high')])], [], []), #Case 22
+                   ([frozenset([R1.get_assignment('off'), P3.get_assignment('low')])], [], []), #Case 23
+                   ([frozenset([P3.get_assignment('high')])], [], []), #Case 24
+                   ([frozenset([P3.get_assignment('low')])], [], []) #Case 25
+                   ]  
+
+
+    thruster_model = {
+        frozenset([T1.get_assignment('thrust')]) : {
+            frozenset([T1.get_assignment('thrust'), R1.get_assignment('on')]) : {
+                frozenset([T1.get_assignment('thrust'), R1.get_assignment('on'), P3.get_assignment('high')]) : {},
+                frozenset([T1.get_assignment('thrust'), R1.get_assignment('on'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([T1.get_assignment('thrust'), R1.get_assignment('off')]) : {
+                frozenset([T1.get_assignment('thrust'), R1.get_assignment('off'), P3.get_assignment('high')]) : {},
+                frozenset([T1.get_assignment('thrust'), R1.get_assignment('off'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([T1.get_assignment('thrust'), P3.get_assignment('high')]) : {},
+            frozenset([T1.get_assignment('thrust'), P3.get_assignment('low')]) : {},
+            },
+        
+        frozenset([T1.get_assignment('nothrust')]) : {
+            frozenset([T1.get_assignment('nothrust'), R1.get_assignment('on')]) : {
+                frozenset([T1.get_assignment('nothrust'), R1.get_assignment('on'), P3.get_assignment('high')]) : {},
+                frozenset([T1.get_assignment('nothrust'), R1.get_assignment('on'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([T1.get_assignment('nothrust'), R1.get_assignment('off')]) : {
+                frozenset([T1.get_assignment('nothrust'), R1.get_assignment('off'), P3.get_assignment('high')]) : {},
+                frozenset([T1.get_assignment('nothrust'), R1.get_assignment('off'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([T1.get_assignment('nothrust'), P3.get_assignment('high')]) : {},
+            frozenset([T1.get_assignment('nothrust'), P3.get_assignment('low')]) : {},
+            },
+        
+        frozenset([R1.get_assignment('on')]) : {
+                frozenset([R1.get_assignment('on'), P3.get_assignment('high')]) : {},
+                frozenset([R1.get_assignment('on'), P3.get_assignment('low')]) : {},
+                },
+            frozenset([R1.get_assignment('off')]) : {
+                frozenset([R1.get_assignment('off'), P3.get_assignment('high')]) : {},
+                frozenset([R1.get_assignment('off'), P3.get_assignment('low')]) : {},
+                },
+        
+        frozenset([P3.get_assignment('high')]) : {},
+        
+        frozenset([P3.get_assignment('low')]) : {},
+        }
+    
+    
+    for key, value in thruster_model.items():
+        assert_equal(fn(sat, [(key, value)]), solution_list[index])
+        #print("Case: ",index, fn(sat, [(key, value)]))
+        index+=1
+        if value!={}:
+            for key, value in value.items():
+                assert_equal(fn(sat, [(key, value)]), solution_list[index])
+                #print("Case: ",index, fn(sat, [(key, value)]))
+                index+=1
+                if value!={}:
+                    for key, value in value.items():
+                        assert_equal(fn(sat, [(key, value)]), solution_list[index])
+                        #print("Case: ",index, fn(sat, [(key, value)]))
+                        index+=1
     return None
 
 
