@@ -15,11 +15,11 @@ def test_ok():
 
 
 ### Helper Functions ###
-def get_all_keys(d):
+def get_all_children(d):
     for key, value in d.items():
         yield key
         if isinstance(value, dict):
-            yield from get_all_keys(value)
+            yield from get_all_children(value)
 
 def is_conflict(sat, candidate):
     return not sat.check_consistency(candidate)[0]
